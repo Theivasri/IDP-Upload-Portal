@@ -1,0 +1,426 @@
+@model List<IDPUpload_Portal.Models.CategoryMetadata>
+@{
+    ViewData["Title"] = "Upload Form";
+}
+
+<style>
+    :root {
+        --pri: #087fce;
+        --pri2: #087fce;
+        --muted: #6b7280;
+        --bg: #f8fafc;
+        --border: #e5e7eb;
+    }
+
+    .page-header-card {
+        background: linear-gradient(135deg, var(--pri), var(--pri2));
+        color: #fff;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1), 0 4px 6px -4px rgba(0, 0, 0, .1);
+        margin-bottom: 24px;
+    }
+
+    .page-header-card h2 {
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .subtle {
+        opacity: .9;
+    }
+
+    .card-modern {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .1), 0 2px 4px -2px rgba(0, 0, 0, .1);
+    }
+
+    .card-modern .card-header {
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .card-modern .card-body {
+        background: #fff;
+    }
+
+    .file-drop {
+        border: 2px dashed var(--border);
+        background: var(--bg);
+        border-radius: 12px;
+        padding: 28px;
+        text-align: center;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .file-drop:hover {
+        border-color: var(--pri);
+        background: rgba(79, 70, 229, .05);
+    }
+
+    .file-drop.dragover {
+        border-color: var(--pri);
+        background: rgba(79, 70, 229, .1);
+        transform: scale(1.01);
+    }
+
+    .file-info {
+        display: none;
+        margin-top: 12px;
+        border: 1px solid #10b98155;
+        background: #10b98115;
+        border-radius: 8px;
+        padding: 12px;
+    }
+
+    .file-info.show {
+        display: block;
+    }
+
+    .actions {
+        gap: 12px;
+    }
+   .status-card {
+    text-align: center;
+    background: linear-gradient(135deg, #e6ffe9, #f0fff4);
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    color: #065f46;
+    font-weight: 500;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    margin: 20px auto;   /* centers the box */
+    max-width: 500px;    /* keeps it neat */
+    animation: fadeIn 0.4s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* centers children inside */
+    justify-content: center;
+}
+.status-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #047857;
+}
+
+.status-card-error {
+    text-align: center;
+    background: linear-gradient(135deg, #ffe6e6, #fff0f0);
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    color: #7f1d1d;
+    font-weight: 500;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    margin: 10px auto;
+    max-width: 450px;
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+.status-title-error {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #b91c1c;
+}
+   .status-card,
+   .status-card-error {
+       transition: opacity 0.5s ease, transform 0.3s ease;
+   }
+
+   .status-card.hide,
+   .status-card-error.hide {
+       opacity: 0;
+       transform: translateY(-10px);
+   }
+
+
+.status-line {
+    margin: 4px 0;
+    font-size: medium;
+}
+
+.status-card-error {
+    background: linear-gradient(135deg, #ffe6e6, #fff0f0);
+    color: #991b1b;
+}
+.status-card-error .status-title {
+    color: #dc2626;
+}
+
+
+@@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+    @@media (max-width: 768px) {
+        .actions {
+            flex-direction: column-reverse;
+            align-items: stretch !important;
+        }
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="page-header-card">
+        <h2>📄 Document Upload</h2>
+        <div class="subtle">Category: <strong>@ViewBag.CategoryName</strong></div>
+    </div>
+    <div id="alertContainer"></div>
+
+    <form id="uploadForm" enctype="multipart/form-data" method="post" asp-action="Submit" asp-controller="Upload">
+
+        <input type="hidden" name="categoryId" value="@ViewBag.CategoryID" />
+
+        <!-- Metadata fields -->
+        <div class="card card-modern mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">📝 Required Information</h5>
+            </div>
+            <div class="card-body">
+                <div id="dynamicFields" class="row g-3">
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        foreach (var field in Model)
+                        {
+                            <div class="col-12 col-md-6">
+                                <label for="field_@field.FieldName" class="form-label fw-semibold">
+                                    @($"{char.ToUpper(field.FieldName[0])}{field.FieldName.Substring(1)}") <span
+                                        class="text-danger">*</span>
+                                </label>
+
+                                <input type="text" id="field_@field.FieldName" name="fieldData[@field.FieldName]"
+                                    class="form-control dynamic-field" placeholder="Enter @field.FieldName.ToLower()"
+                                    required />
+                                <div class="invalid-feedback">
+                                    @field.FieldName is required.
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted">No metadata fields available for this category.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- File upload -->
+        <div class="card card-modern mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">📎 File Upload</h5>
+            </div>
+            <div class="card-body">
+                <label class="form-label fw-semibold" for="zipFile">Upload Zip File <span
+                        class="text-danger">*</span></label>
+                <div id="dropArea" class="file-drop" tabindex="0" role="button">
+                    <div class="mb-1">Drag & drop your .zip here, or click to browse</div>
+                    <div class="text-muted small">Only .zip files are allowed (max 50MB)</div>
+                    <input type="file" id="zipFile" name="file" class="d-none" accept=".zip" required />
+                </div>
+                <div id="fileError" class="text-danger mt-2" style="display: none;"></div>
+                <div id="fileSelectedInfo" class="file-info"></div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-between align-items-center actions">
+            <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary">
+                Back to Categories
+            </a>
+            <button type="submit" id="submitBtn" class="btn btn-primary" disabled>
+                <span id="submitSpinner" class="spinner-border spinner-border-sm me-2" style="display: none;"></span>
+                Submit
+            </button>
+        </div>
+    </form>
+</div>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const zipFileInput = document.getElementById('zipFile');
+        const dynamicFields = document.querySelectorAll('.dynamic-field');
+        const fileError = document.getElementById('fileError');
+        const alertContainer = document.getElementById('alertContainer');
+        const dropArea = document.getElementById('dropArea');
+        const fileSelectedInfo = document.getElementById('fileSelectedInfo');
+        const submitSpinner = document.getElementById('submitSpinner');
+
+        function showAlert(messageHtml, autoHide = true) {
+            alertContainer.innerHTML = messageHtml;
+
+            if (autoHide) {
+                const alertBox = alertContainer.firstElementChild;
+                setTimeout(() => {
+                    if (alertBox) {
+                        alertBox.classList.add('hide');
+                        setTimeout(() => {
+                            if (alertBox && alertBox.parentNode) {
+                                alertBox.remove();
+                            }
+                        }, 500); // matches CSS transition
+                    }
+                }, 5000); // stays for 5s before fading out
+            }
+        }
+
+        function validateForm() {
+            let allFieldsFilled = true;
+            let validFile = false;
+
+            dynamicFields.forEach(field => {
+                if (!field.value.trim()) {
+                    allFieldsFilled = false;
+                }
+            });
+
+            if (zipFileInput.files.length > 0) {
+                const file = zipFileInput.files[0];
+                const fileName = file.name.toLowerCase();
+
+                if (fileName.endsWith('.zip')) {
+                    validFile = true;
+                    fileError.style.display = 'none';
+                } else {
+                    validFile = false;
+                    fileError.textContent = 'Please select a valid .zip file.';
+                    fileError.style.display = 'block';
+                }
+
+                if (validFile) {
+                    fileSelectedInfo.innerHTML = `<strong>Selected:</strong> ${file.name} <span class="text-muted">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>`;
+                    fileSelectedInfo.classList.add('show');
+                } else {
+                    fileSelectedInfo.classList.remove('show');
+                    fileSelectedInfo.innerHTML = '';
+                }
+            }
+
+            submitBtn.disabled = !(allFieldsFilled && validFile);
+        }
+
+        dynamicFields.forEach(field => field.addEventListener('input', validateForm));
+
+        zipFileInput.addEventListener('change', function () {
+            validateForm();
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                const fileName = file.name.toLowerCase();
+                if (!fileName.endsWith('.zip')) {
+                    showAlert(`
+                        <div class="status-card-error">
+                            <div class="status-title-error">⚠️ Invalid File</div>
+                            <div class="status-line">Only .zip files are allowed.</div>
+                        </div>
+                    `);
+                }
+            }
+        });
+
+        ['dragenter', 'dragover'].forEach(evt => {
+            dropArea.addEventListener(evt, (e) => {
+                e.preventDefault(); e.stopPropagation();
+                dropArea.classList.add('dragover');
+            });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+            dropArea.addEventListener(evt, (e) => {
+                e.preventDefault(); e.stopPropagation();
+                dropArea.classList.remove('dragover');
+            });
+        });
+        dropArea.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length) {
+                zipFileInput.files = dt.files;
+                validateForm();
+            }
+        });
+        dropArea.addEventListener('click', () => zipFileInput.click());
+        dropArea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                zipFileInput.click();
+            }
+        });
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (submitBtn.disabled) return;
+
+            submitSpinner.style.display = 'inline-block';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+
+            const formData = new FormData(form);
+            dynamicFields.forEach(field => formData.set(field.name, field.value));
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'RequestVerificationToken': token,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(async (response) => {
+                if (!response.ok) {
+                    showAlert(`
+                        <div class="status-card-error">
+                            <div class="status-title-error">❌ Submission Failed</div>
+                            <div class="status-line">
+                                Something went wrong while submitting your package.
+                            </div>
+                        </div>
+                    `, false);
+                    return;
+                }
+
+                let data = await response.json();
+                const reqId = data.request_id || "N/A";
+
+                showAlert(`
+                    <div class="status-card">
+                        <div class="status-title">✅ Package submitted successfully!</div>
+                        <div class="status-line"><strong>Request ID:</strong> ${reqId}</div>
+                    </div>
+                `);
+
+                form.reset();
+                validateForm();
+                fileSelectedInfo.classList.remove('show');
+                fileSelectedInfo.innerHTML = '';
+            })
+            .catch(error => {
+                console.error("Error:", error.message);
+                showAlert(`
+                    <div class="status-card-error">
+                        <div class="status-title-error">❌ Submission Failed</div>
+                        <div class="status-line">
+                            Something went wrong while submitting your package.
+                        </div>
+                    </div>
+                `, false);
+            })
+            .finally(() => {
+                submitSpinner.style.display = 'none';
+                submitBtn.innerHTML = 'Submit';
+                validateForm();
+            });
+        });
+
+        validateForm();
+    });
+</script>

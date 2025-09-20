@@ -1,0 +1,54 @@
+@model List<IDPUpload_Portal.Models.Category>
+
+@{
+    ViewData["Title"] = "Categories";
+}
+
+<style>
+    :root { --pri:#087fce; --pri2:#087fce; --border:#e5e7eb; --bg:#f8fafc; }
+    .page-header-card { background: linear-gradient(135deg, var(--pri), var(--pri2)); color:#fff; border-radius:12px; padding:24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1); margin-bottom:24px; }
+    .page-header-card h2 { margin:0; font-weight:700; }
+    .card-modern { border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1); }
+    .card-modern .card-header { background:#fff; border-bottom:1px solid var(--border); }
+    .card-modern .card-body { background:#fff; }
+    .helper { color:#6b7280; }
+    .actions { display:flex; gap:12px; align-items:center; justify-content:flex-end; }
+    @@media (max-width:768px){ .actions{ flex-direction:column; align-items:stretch; } }
+    select.form-select { padding:.6rem .75rem; }
+    .lead-muted { color:#6b7280; }
+</style>
+
+<div class="container mt-4">
+    <div class="page-header-card">
+        <h2>📂 Choose a Category</h2>
+        <div class="lead-muted">Select a document category to proceed to the upload page.</div>
+    </div>
+
+    <div class="card card-modern">
+        <div class="card-header">
+            <h5 class="mb-0">🧭 Category Selection</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="UploadForm" asp-controller="Upload">
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-md-8">
+                        <label for="category" class="form-label fw-semibold">Select Category <span class="text-danger">*</span></label>
+                        <select id="category" name="categoryId" class="form-select" required>
+                            <option value="">-- Select Category --</option>
+                            @foreach (var cat in Model)
+                            {
+                                <option value="@cat.Category_ID">@cat.CategoryName</option>
+                            }
+                        </select>
+                        <div class="form-text">You will be redirected to the upload form for the selected category.</div>
+                    </div>
+                    <div class="col-12 col-md-4 text-md-end">
+                        <div class="actions">
+                            <button type="submit" class="btn btn-primary w-100">Go to Upload</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
